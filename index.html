@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bloodsucker Stem Splitter</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 100%;
+    }
+    h1 {
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      text-align: center;
+    }
+    input[type="file"] {
+      margin-bottom: 1rem;
+      width: 100%;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #e63946;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #d62828;
+    }
+    .status {
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+    .links a {
+      display: block;
+      margin-top: 0.5rem;
+      color: #1d3557;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bloodsucker Stem Splitter</h1>
+    <input type="file" id="audioFile" accept="audio/*" />
+    <button onclick="submitFile()">Submit</button>
+    <div class="status" id="status"></div>
+    <div class="links" id="results"></div>
+  </div>
+
+  <script>
+    async function submitFile() {
+      const fileInput = document.getElementById("audioFile");
+      const status = document.getElementById("status");
+      const results = document.getElementById("results");
+      results.innerHTML = "";
+
+      if (!fileInput.files.length) {
+        status.textContent = "Please select a file.";
+        return;
+      }
+
+      status.textContent = "Uploading and processing...";
+
+      const formData = new FormData();
+      formData.append("audio_file", fileInput.files[0]);
+
+      try {
+        const response = await fetch("https://bloodsucker.onrender.com/split", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (data.job_id) {
+          status.textContent = "Processing complete. Fetching results...";
+
+          setTimeout(async () => {
+            const resultRes = await fetch(
+              `https://bloodsucker.onrender.com/results/${data.job_id}`
+            );
+            const resultData = await resultRes.json();
+
+            if (resultData.vocal_link && resultData.instrumental_link) {
+              status.textContent = "Download your stems:";
+              results.innerHTML = `
+                <a href="${resultData.vocal_link}" target="_blank">Download Vocals</a>
+                <a href="${resultData.instrumental_link}" target="_blank">Download Instrumental</a>
+              `;
+            } else {
+              status.textContent = "Something went wrong. Please try again.";
+            }
+          }, 2000); // Simulated delay
+        } else {
+          status.textContent = data.message || "Error in response.";
+        }
+      } catch (error) {
+        status.textContent = "Request failed. Please try again.";
+      }
+    }
+  </script>
+</body>
+</html>
